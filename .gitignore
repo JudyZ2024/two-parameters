@@ -4,3 +4,5 @@
 .Ruserdata
 
 .Rproj.user
+*_files
+rsconnect

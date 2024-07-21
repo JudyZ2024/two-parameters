@@ -2,25 +2,54 @@
 title: ""Two Parameters""
 author: "Judy Zhu"
 format: html
+execute: 
+  echo: false
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+#| message: FALSE
+library(tidyverse)
+library(primer.data)
+library(tidybayes)
+library(brms)
+library(gtsummary)
 ```
 
-You can add options to executable code like this 
-
 ```{r}
-#| echo: false
-2 * 2
+nhanes |> 
+  filter(sex == "Male", age >= 18) |> 
+  select(height) |> 
+  drop_na() |>
+  ggplot(aes(x = height)) +
+  geom_histogram(bins = 50) +
+  labs(title = "Male Adult Hight in the US in 2010",
+  x = "Height(cm)",
+  y = "Count",
+  source = "National Health and Nutrition Examination Survey")
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+```{r}
+brm(formula = height ~ 1, data = ch5, family = gaussian(), silent = 2, refresh = 0, seed = 12)
+```
+```{r}
+tbl_regression(fit_male_height, intercept = TRUE)
+```
+```{r}
+label: plot
+ndata <- tibble(.rows = 1)
+fit_male_height |> add_predicted_draws(newdata = ndata) |>
+ggplot(aes(x = .prediction)) +
+geom_histogram(aes(y = after_stat(count/sum(count))), bins = 100) +
+labs(title = "Prosterior for Height of Random Male", 
+subtitle = "Uncertainy for a single indicidual is much greater than for the expected value",
+x = "Height(cm)", y = "Probability", caption = "Data source: NHANES")+
+scale_x_continuous(labels = scales::number_format()) +
+scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+```
+```{r}
+fit_male_height |> add_predicted_draws(newdata = ndata) |> 
+mutate(tall = if_else(.prediction > 180, TRUE, FALSE))|>
+summarize(odds = mean(tall))
+```
+
+Making a github repo two parameters, connecting with R, made a graph on male height. What is the chance next men I meet is over 180 cm. Is the data representitve of the larger population. Approaching with the functional form of chances, and dependent varriable probability
